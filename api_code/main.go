@@ -159,6 +159,7 @@ func queryLocations(locations *nearbyUsers, minLat, maxLat, minLon, maxLon, latD
 			&nearbyUser.UserID,
 			&nearbyUser.Latitude,
 			&nearbyUser.Longitude,
+			&nearbyUser.Distance,
 		)
 		if err != nil {
 			return err
