@@ -24,8 +24,8 @@ CREATE TABLE public.listens (
 );
 CREATE TABLE public.loc (
     "userID" integer NOT NULL,
-    lattitude numeric(8,6) NOT NULL,
-    longtitude numeric(9,6) NOT NULL
+    latitude numeric(8,6) NOT NULL,
+    longitude numeric(9,6) NOT NULL
 );
 CREATE TABLE public.music (
     "songID" integer NOT NULL,
