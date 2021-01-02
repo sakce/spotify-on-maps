@@ -105,25 +105,54 @@ type nearbyUsers struct {
 
 func queryLocations(locations *nearbyUsers, minLat, maxLat, minLon, maxLon, latDeg, lonDeg, R, rad float64) error {
 
-	stmt, err := db.Prepare("WITH consts (minLat, maxLat, minLon, maxLon, " +
-		"latDeg, lonDeg, R, radius) as (values (CAST($1 AS DOUBLE PRECISION), CAST($2 AS DOUBLE PRECISION), CAST($3 AS DOUBLE PRECISION), CAST($4 AS DOUBLE PRECISION), CAST($5 AS DOUBLE PRECISION), CAST($6 AS DOUBLE PRECISION), CAST($7 AS DOUBLE PRECISION), CAST($8 AS DOUBLE PRECISION))) " +
+	// stmt, err := db.Prepare("WITH consts (minLat, maxLat, minLon, maxLon, " +
+	// 	"latDeg, lonDeg, R, radius) as (values ($1, $2, $3, $4, $5, $6, $7, $8) " + 
+	// 	// (CAST($1 AS DOUBLE PRECISION), CAST($2 AS DOUBLE PRECISION), CAST($3 AS DOUBLE PRECISION), CAST($4 AS DOUBLE PRECISION), CAST($5 AS DOUBLE PRECISION), CAST($6 AS DOUBLE PRECISION), CAST($7 AS DOUBLE PRECISION), CAST($8 AS DOUBLE PRECISION))) " +
 
-		"SELECT l.\"userID\", l.\"latitude\", l.\"longitude\", " +
-		// calculation for distance
-		"acos(sin(consts.latDeg)*sin(radians(\"latitude\")) + " +
-		"cos(consts.latDeg)*cos(radians(\"latitude\")) * " +
-		"cos(radians(\"longitude\")-consts.lonDeg)) * consts.R AS distance " +
+	// 	"SELECT l.\"userID\", l.\"latitude\", l.\"longitude\", " +
+	// 	// calculation for distance
+	// 	"acos(sin(consts.latDeg)*sin(radians(l.\"latitude\")) + " +
+	// 	"cos(consts.latDeg)*cos(radians(l.\"latitude\")) * " +
+	// 	"cos(radians(l.\"longitude\")-consts.lonDeg)) * consts.R AS distance " +
 
-		// Bounding square box - sub-query
-		"FROM (SELECT l.\"userID\", l.\"latitude\", l.\"longitude\" " +
-		"FROM loc l, consts WHERE \"latitude\" " +
-		"BETWEEN consts.minLat AND consts.maxLat AND \"longitude\" " +
-		"BETWEEN consts.minLon AND consts.maxLon) AS FirstCut, consts " +
+	// 	// Bounding square box - sub-query
+	// 	"FROM (SELECT l.\"userID\", l.\"latitude\", l.\"longitude\" " +
+	// 	"FROM loc AS l, consts WHERE l.\"latitude\" " +
+	// 	"BETWEEN consts.minLat AND consts.maxLat AND l.\"longitude\" " +
+	// 	"BETWEEN consts.minLon AND consts.maxLon) AS FirstCut, consts " +
 
-		"WHERE acos(sin(consts.latDeg)*sin(radians(\"latitude\")) + " +
-		"cos(consts.latDeg)*cos(radians(\"latitude\")) * " +
-		"cos(radians(\"longitude\")-consts.lonDeg)) * consts.R < consts.radius " +
-		"ORDER BY distance;")
+	// 	"WHERE acos(sin(consts.latDeg)*sin(radians(\"latitude\")) + " +
+	// 	"cos(consts.latDeg)*cos(radians(\"latitude\")) * " +
+	// 	"cos(radians(\"longitude\")-consts.lonDeg)) * consts.R < consts.radius " +
+	// 	"ORDER BY distance;")
+
+
+	rows, err := db.Query("WITH consts (minLat, maxLat, minLon, maxLon, latDeg, lonDeg, R, radius) as (values ($1, $2, $3, $4, $5, $6, $7, $8)) " + 
+							"SELECT firstCut.\"userID\", firstCut.\"latitude\", firstCut.\"longitude\", " + 
+							// Distance
+							"acos(" + 
+								"sin(consts.latDeg) * sin(radians(firstCut.\"latitude\")) + " + 
+								"cos(consts.latDeg) * cos(radians(firstCut.\"latitude\")) * " + 
+								"cos(radians(firstCut.\"longitude\") - consts.lonDeg)" + 
+							") * consts.R AS distance " + 
+							// FROM -> sub-query
+							"FROM (" + 
+								"SELECT l.\"userID\" as \"userID\", " + 
+										"l.\"latitude\" as \"latitude\", " +  
+										"l.\"longitude\" as \"longitude\" " + 
+								"FROM loc AS l, consts " + 
+								// defining the rectangle bounding box
+								"WHERE l.\"latitude\" BETWEEN consts.minLat AND consts.maxLat AND " +
+										"l.\"longitude\" BETWEEN consts.minLon AND consts.maxLon " + 
+							") AS firstCut, consts " + 
+							// Cosine(?) law
+							"WHERE acos(" + 
+										"sin(consts.latDeg) * sin(radians(firstCut.\"latitude\")) + " + 
+										"cos(consts.latDeg) * cos(radians(firstCut.\"latitude\")) * " + 
+										"cos(radians(firstCut.\"longitude\") - consts.lonDeg) " + 
+									") * consts.R " +
+							"< consts.radius " + 
+							"ORDER BY distance;", minLat, maxLat, minLon, maxLon, latDeg, lonDeg, R, rad)
 
 	// sub-query
 	// stmt, err := db.Prepare("WITH consts (minLat, maxLat, minLon, maxLon, " +
@@ -136,18 +165,18 @@ func queryLocations(locations *nearbyUsers, minLat, maxLat, minLon, maxLon, latD
 
 	// stmt, err := db.Prepare("SELECT latitude, firstName FROM account AS a, loc AS l WHERE l.userID = a.userID")
 
-	if err != nil {
-		fmt.Println("Right here mate! ")
-		log.Fatal(err)
-	}
-	defer stmt.Close()
+	// if err != nil {
+	// 	fmt.Println("Right here mate! ")
+	// 	log.Fatal(err)
+	// }
+	// defer stmt.Close()
 
-	fmt.Println("Passed the preparation mate! \n")
+	// fmt.Println("Passed the preparation mate! \n")
 
-	// sub-query
-	// rows, err := stmt.Query(minLat, maxLat, minLon, maxLon, R, rad)
+	// // sub-query
+	// // rows, err := stmt.Query(minLat, maxLat, minLon, maxLon, R, rad)
 
-	rows, err := stmt.Query(minLat, maxLat, minLon, maxLon, latDeg, lonDeg, R, rad)
+	// rows, err := stmt.Query(minLat, maxLat, minLon, maxLon, latDeg, lonDeg, R, rad)
 
 	if err != nil {
 		return err
