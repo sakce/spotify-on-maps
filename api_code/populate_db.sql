@@ -6,7 +6,7 @@ VALUES (1001, 'Marija', 'Aleksic', 'marija@spotify.nl', True, False),
        (1005, 'Kaloyan', 'Videlov', 'yan@spotify.nl', True, False),
        (1006, 'Hubble', 'Cafe', 'hubble@spotify.nl', False, True);
 
-INSERT INTO loc("userID", "latitude", "longtitude")
+INSERT INTO loc("userID", "latitude", "longitude")
 VALUES (1001, 51.449086, 5.447723),
        (1002, 51.441169, 5.484827),
        (1003, 51.434106, 5.475895),
