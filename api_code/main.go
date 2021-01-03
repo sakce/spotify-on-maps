@@ -174,14 +174,74 @@ func getCurrentSong(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	userID := mux.Vars(r)["userID"]
 
-	json.NewEncoder(w).Encode(userID)
+	current := currentSong{}
 
-	// TODO
-	// result_song = ...
-	// json.NewEncoder(w).Encode(result_song)
+	err := queryCurrentSong(&current, userID)
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	out, err := json.Marshal(current)
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	fmt.Fprintf(w, string(out))
 
 	defer db.Close()
 	return
+}
+
+type currentSongSummary struct {
+	UserID    float64
+	SongName  string
+	SongArtist string
+}
+
+type currentSong struct {
+	CurrentSong []currentSongSummary
+}
+
+func queryCurrentSong(songs *currentSong, userID string) error {
+	stmt, err := db.Prepare("WITH consts (lookupUser) as (values ($1)) " + 
+							"SELECT l.\"userID\", m.\"songName\", m.\"artist\" " + 
+							"FROM listens l, music m, consts " + 
+							"WHERE l.\"songID\" = m.\"songID\" AND CAST(consts.lookupUser AS INTEGER) = l.\"userID\";")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(userID)
+	
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		currentSong := currentSongSummary{}
+		err = rows.Scan(
+			&currentSong.UserID,
+			&currentSong.SongName,
+			&currentSong.SongArtist,
+		)
+		if err != nil {
+			return err
+		}
+		songs.CurrentSong = append(songs.CurrentSong, currentSong)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func initDb() {
