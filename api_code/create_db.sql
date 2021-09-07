@@ -30,8 +30,8 @@ CREATE TABLE public.loc (
 CREATE TABLE public.music (
     "songID" integer NOT NULL,
     "songName" character varying NOT NULL,
-    artist character varying NOT NULL,
-    length time without time zone NOT NULL
+    "artist" character varying NOT NULL,
+    "length" time without time zone NOT NULL
 );
 ALTER TABLE ONLY public.music
     ADD CONSTRAINT pk_music PRIMARY KEY ("songID");

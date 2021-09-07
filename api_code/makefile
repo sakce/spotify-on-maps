@@ -1,6 +1,17 @@
 #!make
 include .env
 export
+current_dir=$(realpath .)
+export includedir = $(current_dir)/
 
 rest:
-	go run "C:\Users\Asus S\Desktop\Eindhoven\Y3\Q2\Startups\rest\main.go"
+	go run main.go
+
+player:
+	go run player/player.go 
+
+song_name:
+	go run song/song.go
+
+song_artist:
+	go run artist/song_artist.go
